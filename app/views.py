@@ -95,8 +95,8 @@ def create_post(request):
 
     if serializer.is_valid():
 
-        post_text = serializer.validated_data['text']
-        check_sustainability(post_text)
+        # post_text = serializer.validated_data['text']
+        # check_sustainability(post_text)
 
         # Save the new post using the serializer
         serializer.save(user=user)

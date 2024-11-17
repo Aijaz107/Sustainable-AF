@@ -8,10 +8,13 @@ from app import views
 urlpatterns = [
     path('profile/', views.user_profile, name='user_profile'),
     path('user_registration', views.user_registration, name='user_registration'),
+    path('login', views.user_login, name='login'),
     path('posts/', views.post_list, name='post-list'),
     path('create_post/', views.create_post, name='create-post'),
-
     path('analyze_post/', views.analyze_post, name='analyze-post'),
+    path('title_generator', views.title_generator, name='title_generator'),
+    path('posts/<int:post_id>/edit', views.edit_post, name='edit_post'),
+    
     path('match/', views.partnership_match, name='partnership_match'),
     path('match/status/<int:pk>/', views.partnership_status, name='partnership_status'),
     path('resources/upload/', views.resource_upload, name='resource_upload'),

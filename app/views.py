@@ -1,11 +1,15 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from django.contrib.auth.hashers import check_password
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
 from datetime import date
 from seesus import SeeSus
-
+import requests
+from transformers import pipeline
 
 from .models import UserRegistration, Post
 from .serializers import UserRegistrationSerializer, UserProfileSerializer, PostSerializer
@@ -49,6 +53,35 @@ def analyze_post(request):
     except json.JSONDecodeError:
         return Response({"error": "Invalid JSON payload"}, status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def title_generator(request):
+        
+        content = request.data.get('content')
+        
+        API_URL = "https://api-inference.huggingface.co/models/sshleifer/distilbart-cnn-12-6"
+        headers = {"Authorization": "Bearer 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"}
+
+
+        def query(payload):
+            response = requests.post(API_URL, headers=headers, json=payload)
+            return response.json()
+
+        # Check if content is provided
+        if not content:
+            return Response({"error": "Content is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Make the POST request to the external API
+        try:
+            # summarizer = pipeline("summarization", model="path-to-model")
+            # summary = summarizer(content)[0]["summary_text"]
+            output = query({"inputs":content, "parameters":{"min_length":20,"max_length":50}})
+            print("respone",query({"inputs":content, "parameters":{"min_length":20,"max_length":50}}))
+            # Parse the response and extract the desired result
+            return Response(output.json(), status=status.HTTP_201_CREATED )
+        except requests.RequestException as e:
+            return Response({"error": f"Request failed: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 # User Registration
 @api_view(['POST'])
@@ -61,6 +94,33 @@ def user_registration(request):
         return Response({"message": "User registered successfully"}, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+# User Login
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def user_login(request):
+    username = request.data.get('username')
+    password = request.data.get('password')
+
+    # Check if username and password are provided
+    if not username or not password:
+        return Response({"error": "Username and password are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        # Manually get the user by username
+        user = UserRegistration.objects.get(username=username)
+    except UserRegistration.DoesNotExist:
+        return Response({"error": "Invalid username or password 1"}, status=status.HTTP_401_UNAUTHORIZED)
+
+    # Check if the password matches
+    if password != user.password:
+        return Response({"error": "Invalid username or password 2"}, status=status.HTTP_401_UNAUTHORIZED)
+
+    # Success: Login is valid
+    return Response({
+        "message": "Login successful",
+        "username": user.username,
+        "email": user.email,
+    }, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -105,6 +165,31 @@ def create_post(request):
     # If the data is invalid, return the errors
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+@api_view(['PUT'])
+@permission_classes([AllowAny])
+def edit_post(request, post_id):
+    """Edit an existing post by its ID."""
+    # Find the post to be updated or return 404 if not found
+    post = get_object_or_404(Post, id=post_id)
+
+    # Extract the username from the payload
+    username = request.data.get('username')
+    if not username:
+        return Response({"error": "Username is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Check if the username matches the post's owner
+    if post.user.username != username:
+        return Response({"error": "Permission denied. You can only edit your own posts."}, status=status.HTTP_403_FORBIDDEN)
+
+    # Use serializer to update the post data
+    serializer = PostSerializer(post, data=request.data, partial=True)  # Allow partial updates
+    if serializer.is_valid():
+        serializer.save()  # Save the changes to the post
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    # Return errors if data is invalid
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # User Profile View
 @api_view(['GET', 'PUT'])

@@ -154,7 +154,7 @@ def create_post(request):
     serializer = PostSerializer(data=data)
 
     if serializer.is_valid():
-
+        
         # post_text = serializer.validated_data['text']
         # check_sustainability(post_text)
 

@@ -11,3 +11,4 @@ seesus==1.2.1
 sqlparse==0.5.1
 typing_extensions==4.12.2
 tzdata==2024.2
+django-cors-headers==4.3.1

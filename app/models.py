@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser, Permission, Group
 from django.db import models
-
+from django.contrib.postgres.fields import ArrayField
+from django.db.models import JSONField
 class UserRegistration(models.Model):
     USER_TYPES = [
         ('NGO', 'NGO'),
@@ -17,7 +18,19 @@ class UserRegistration(models.Model):
 
 class Post(models.Model):
     user = models.ForeignKey(UserRegistration, on_delete=models.CASCADE, related_name="posts")
+    
+    # Existing field
     text = models.TextField()
+    
+    # New fields for analysis data
+    sus = models.BooleanField(default=False)  # To store if the text aligns with sustainability
+    sdg_names = ArrayField(models.CharField(max_length=50), blank=True, default=list)  # List of SDG names
+    sdg_descriptions = ArrayField(models.TextField(), blank=True, default=list)  # List of SDG descriptions
+    target_names = ArrayField(models.CharField(max_length=50), blank=True, default=list)  # List of target names
+    target_descriptions = ArrayField(models.TextField(), blank=True, default=list)  # List of target descriptions
+    sustainability_dimensions = JSONField(default=dict)  # JSON field to store sustainability dimensions
+
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

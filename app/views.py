@@ -27,6 +27,27 @@ from rest_framework import status
 from django.views.decorators.csrf import csrf_exempt
 import json
 
+
+def analyze_post_method(text):
+    
+    result = SeeSus(text)
+    result_json = {
+            "text": text,
+            "sus": result.sus,
+            "sdgs": {
+                "names": result.sdg,
+                "descriptions": result.sdg_desc
+            },
+            "targets": {
+                "names": result.target,
+                "descriptions": result.target_desc
+            },
+            "sustainability_dimensions": result.see
+        }
+    
+    return result_json
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 @csrf_exempt
@@ -46,9 +67,21 @@ def analyze_post(request):
             )
 
         result = SeeSus(post_text)
-        response = {"result": result.sus}
+        result_json = {
+            "text": post_text,
+            "sus": result.sus,
+            "sdgs": {
+                "names": result.sdg,
+                "descriptions": result.sdg_desc
+            },
+            "targets": {
+                "names": result.target,
+                "descriptions": result.target_desc
+            },
+            "sustainability_dimensions": result.see
+        }
 
-        return Response(response, status=status.HTTP_200_OK)
+        return Response(result_json, status=status.HTTP_200_OK)
 
     except json.JSONDecodeError:
         return Response({"error": "Invalid JSON payload"}, status=status.HTTP_400_BAD_REQUEST)
@@ -154,13 +187,25 @@ def create_post(request):
     serializer = PostSerializer(data=data)
 
     if serializer.is_valid():
-        
-        # post_text = serializer.validated_data['text']
-        # check_sustainability(post_text)
+        # Perform analysis on the post text
+        post_text = serializer.validated_data['text']
+        analysis_result = analyze_post_method(post_text)
 
-        # Save the new post using the serializer
-        serializer.save(user=user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        # Save the new post using the serializer with additional analysis data
+        post = Post.objects.create(
+            user=user,
+            text=analysis_result['text'],
+            sus=analysis_result['sus'],
+            sdg_names=analysis_result['sdgs']['names'],
+            sdg_descriptions=analysis_result['sdgs']['descriptions'],
+            target_names=analysis_result['targets']['names'],
+            target_descriptions=analysis_result['targets']['descriptions'],
+            sustainability_dimensions=analysis_result['sustainability_dimensions']
+        )
+
+        # Serialize the saved post
+        post_serializer = PostSerializer(post)
+        return Response(post_serializer.data, status=status.HTTP_201_CREATED)
 
     # If the data is invalid, return the errors
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

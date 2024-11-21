@@ -26,7 +26,7 @@ class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = [
-            'text', 'username', 'created_at', 'sus', 'sdg_names', 'sdg_descriptions', 
+           'id' ,'text', 'username', 'created_at', 'sus', 'sdg_names', 'sdg_descriptions', 
             'target_names', 'target_descriptions', 'sustainability_dimensions'
         ]
 

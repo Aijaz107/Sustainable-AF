@@ -236,6 +236,22 @@ def edit_post(request, post_id):
     # Return errors if data is invalid
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+def delete_post(request, post_id):
+    """
+    Delete a post by its ID without requiring authentication.
+    """
+    try:
+        # Retrieve the post by its ID
+        post = Post.objects.get(id=post_id)
+    except Post.DoesNotExist:
+        return Response({"error": "Post does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+    # Delete the post
+    post.delete()
+    return Response({"message": "Post deleted successfully."}, status=status.HTTP_200_OK)
+
 # User Profile View
 @api_view(['GET', 'PUT'])
 @permission_classes([IsAuthenticated])

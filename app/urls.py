@@ -14,6 +14,7 @@ urlpatterns = [
     path('analyze_post/', views.analyze_post, name='analyze-post'),
     path('title_generator', views.title_generator, name='title_generator'),
     path('posts/<int:post_id>/edit', views.edit_post, name='edit_post'),
+    path('delete_post/<int:post_id>/', views.delete_post, name='delete_post'),
     
     path('match/', views.partnership_match, name='partnership_match'),
     path('match/status/<int:pk>/', views.partnership_status, name='partnership_status'),
